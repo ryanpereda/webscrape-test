@@ -1,122 +1,110 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useState } from "react";
+
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [file, setFile] = useState(null);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState("");
+
+
+  const handleUpload = async (event) => {
+    event.preventDefault();
+
+    if (!file) {
+      setError("Please select a CSV file.");
+      return;
+    }
+
+    setError("");
+    setResult(null);
+
+    const formData = new FormData();
+
+    formData.append("file", file);
+
+    try {
+      const response = await fetch(
+        "http://127.0.0.1:8000/api/upload/",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || "Upload failed.");
+        return;
+      }
+
+      setResult(data);
+
+    } catch (error) {
+      setError("Could not connect to the server.");
+      console.error(error);
+    }
+  };
+
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
+    <main>
+      <h1>Data Miner</h1>
+
+      <form onSubmit={handleUpload}>
+        <input
+          type="file"
+          accept=".csv"
+          onChange={(event) =>
+            setFile(event.target.files[0])
+          }
+        />
+
+        <button type="submit">
+          Upload and Analyze
         </button>
-      </section>
+      </form>
 
-      <div className="ticks"></div>
+      {error && (
+        <p>{error}</p>
+      )}
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
+      {result && (
+        <section>
+          <h2>Dataset Analysis</h2>
+
+          <p>
+            <strong>File:</strong> {result.filename}
+          </p>
+
+          <p>
+            <strong>Rows:</strong> {result.rows}
+          </p>
+
+          <p>
+            <strong>Columns:</strong> {result.columns}
+          </p>
+
+          <h3>Column Names</h3>
+
           <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
+            {result.column_names.map((column) => (
+              <li key={column}>
+                {column}
+              </li>
+            ))}
           </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+          <h3>Preview</h3>
+
+          <pre>
+            {JSON.stringify(result.preview, null, 2)}
+          </pre>
+        </section>
+      )}
+    </main>
+  );
 }
 
-export default App
+
+export default App;
