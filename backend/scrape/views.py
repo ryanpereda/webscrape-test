@@ -3,25 +3,9 @@ from .scraper import scrape_quotes
 
 
 def quotes(request):
-    page = request.GET.get("page", 1)
+    scraped_quotes = scrape_quotes()
 
-    try:
-        page = int(page)
-
-        if page < 1:
-            raise ValueError
-
-    except ValueError:
-        return JsonResponse(
-            {
-                "error": "Page must be a positive integer."
-            },
-            status=400,
-        )
-
-    scraped_data = scrape_quotes(page)
-
-    if scraped_data is None:
+    if scraped_quotes is None:
         return JsonResponse(
             {
                 "error": "Unable to scrape the target website."
@@ -30,7 +14,6 @@ def quotes(request):
         )
 
     return JsonResponse({
-        "page": page,
-        "quotes": scraped_data["quotes"],
-        "has_next_page": scraped_data["has_next_page"],
+        "quotes": scraped_quotes,
+        "count": len(scraped_quotes),
     })

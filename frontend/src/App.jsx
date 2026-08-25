@@ -3,13 +3,12 @@ import { useEffect, useState } from "react";
 
 function App() {
   const [quotes, setQuotes] = useState([]);
-  const [page, setPage] = useState(1);
-  const [hasNextPage, setHasNextPage] = useState(false);
+  const [count, setCount] = useState(0);
   const [error, setError] = useState(null);
 
 
   useEffect(() => {
-    fetch(`http://127.0.0.1:8000/api/quotes/?page=${page}`)
+    fetch("http://127.0.0.1:8000/api/quotes/")
       .then((response) => {
         if (!response.ok) {
           throw new Error("Failed to fetch quotes");
@@ -19,50 +18,20 @@ function App() {
       })
       .then((data) => {
         setQuotes(data.quotes);
-        setHasNextPage(data.has_next_page);
+        setCount(data.count);
         setError(null);
       })
       .catch((error) => {
         setError(error.message);
       });
-  }, [page]);
-
-
-  function goToPreviousPage() {
-    if (page > 1) {
-      setPage(page - 1);
-    }
-  }
-
-
-  function goToNextPage() {
-    if (hasNextPage) {
-      setPage(page + 1);
-    }
-  }
+  }, []);
 
 
   return (
     <main>
       <h1>Quote Scraper</h1>
 
-      <div>
-        <button
-          onClick={goToPreviousPage}
-          disabled={page === 1}
-        >
-          Previous
-        </button>
-
-        <span> Page {page} </span>
-
-        <button
-          onClick={goToNextPage}
-          disabled={!hasNextPage}
-        >
-          Next
-        </button>
-      </div>
+      <p>Total quotes: {count}</p>
 
       {error && <p>Error: {error}</p>}
 

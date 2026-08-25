@@ -5,41 +5,43 @@ from bs4 import BeautifulSoup
 BASE_URL = "https://quotes.toscrape.com"
 
 
-def scrape_quotes(page=1):
-    if page == 1:
-        url = f"{BASE_URL}/"
-    else:
-        url = f"{BASE_URL}/page/{page}/"
+def scrape_quotes():
+    all_quotes = []
+    page = 1
 
-    try:
-        response = requests.get(url, timeout=10)
-        response.raise_for_status()
+    while True:
+        if page == 1:
+            url = f"{BASE_URL}/"
+        else:
+            url = f"{BASE_URL}/page/{page}/"
 
-    except requests.RequestException as error:
-        print(f"Scraping error: {error}")
-        return None
+        try:
+            response = requests.get(url, timeout=10)
+            response.raise_for_status()
 
-    soup = BeautifulSoup(response.text, "html.parser")
+        except requests.RequestException as error:
+            print(f"Scraping error: {error}")
+            return None
 
-    quote_elements = soup.select(".quote")
+        soup = BeautifulSoup(response.text, "html.parser")
 
-    quotes = []
+        quote_elements = soup.select(".quote")
 
-    for quote in quote_elements:
-        text_element = quote.select_one(".text")
-        author_element = quote.select_one(".author")
+        for quote in quote_elements:
+            text_element = quote.select_one(".text")
+            author_element = quote.select_one(".author")
 
-        if text_element and author_element:
-            quotes.append({
-                "text": text_element.get_text(strip=True),
-                "author": author_element.get_text(strip=True),
-            })
+            if text_element and author_element:
+                all_quotes.append({
+                    "text": text_element.get_text(strip=True),
+                    "author": author_element.get_text(strip=True),
+                })
 
-    next_button = soup.select_one("li.next")
+        next_button = soup.select_one("li.next")
 
-    has_next_page = next_button is not None
+        if next_button is None:
+            break
 
-    return {
-        "quotes": quotes,
-        "has_next_page": has_next_page,
-    }
+        page += 1
+
+    return all_quotes
