@@ -1,13 +1,17 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 
 function App() {
   const [quotes, setQuotes] = useState([]);
   const [count, setCount] = useState(0);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
 
-  useEffect(() => {
+  function scrapeQuotes() {
+    setLoading(true);
+    setError(null);
+
     fetch("http://127.0.0.1:8000/api/quotes/")
       .then((response) => {
         if (!response.ok) {
@@ -19,21 +23,31 @@ function App() {
       .then((data) => {
         setQuotes(data.quotes);
         setCount(data.count);
-        setError(null);
       })
       .catch((error) => {
         setError(error.message);
+      })
+      .finally(() => {
+        setLoading(false);
       });
-  }, []);
+  }
 
 
   return (
     <main>
       <h1>Quote Scraper</h1>
 
-      <p>Total quotes: {count}</p>
+      <button onClick={scrapeQuotes} disabled={loading}>
+        {loading ? "Scraping..." : "Scrape Quotes"}
+      </button>
+
+      {loading && <p>Scraping all pages. Please wait...</p>}
 
       {error && <p>Error: {error}</p>}
+
+      {!loading && quotes.length > 0 && (
+        <p>Total quotes scraped: {count}</p>
+      )}
 
       {quotes.map((quote, index) => (
         <div key={index}>
