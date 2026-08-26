@@ -1,19 +1,20 @@
 from django.http import JsonResponse
-from .scraper import scrape_quotes
+
+from .services import get_quotes
 
 
 def quotes(request):
-    scraped_quotes = scrape_quotes()
+    quotes = get_quotes()
 
-    if scraped_quotes is None:
-        return JsonResponse(
-            {
-                "error": "Unable to scrape the target website."
-            },
-            status=502,
-        )
+    quote_data = [
+        {
+            "text": quote.text,
+            "author": quote.author,
+        }
+        for quote in quotes
+    ]
 
     return JsonResponse({
-        "quotes": scraped_quotes,
-        "count": len(scraped_quotes),
+        "quotes": quote_data,
+        "count": len(quote_data),
     })
