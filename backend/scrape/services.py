@@ -3,7 +3,7 @@ from datetime import timedelta
 from django.db import transaction
 from django.utils import timezone
 
-from .models import Quote, ScrapeState
+from .models import Quote, ScrapeState, Tag
 from .scraper import scrape_quotes
 
 
@@ -11,39 +11,53 @@ SCRAPE_INTERVAL = timedelta(hours=6)
 
 
 def get_quotes():
-    scrape_state, created = ScrapeState.objects.get_or_create(
-        pk=1
-    )
+    scrape_state, created = ScrapeState.objects.get_or_create(pk=1)
 
     needs_scrape = (
         scrape_state.last_scraped_at is None
         or timezone.now() - scrape_state.last_scraped_at >= SCRAPE_INTERVAL
     )
 
+    refreshed = False
+    refresh_failed = False
+
     if needs_scrape:
-        refresh_quotes(scrape_state)
+        refreshed = refresh_quotes(scrape_state)
 
-    quotes = Quote.objects.all().order_by("id")
+        if not refreshed:
+            refresh_failed = True
 
-    return quotes
+    quotes = Quote.objects.prefetch_related("tags").order_by("id")
+
+    return {
+        "quotes": quotes,
+        "last_scraped_at": scrape_state.last_scraped_at,
+        "refreshed": refreshed,
+        "refresh_failed": refresh_failed,
+    }
 
 
 def refresh_quotes(scrape_state):
     scraped_quotes = scrape_quotes()
 
-    if scraped_quotes is None:
+    if not scraped_quotes:
         return False
 
     with transaction.atomic():
         Quote.objects.all().delete()
 
-        Quote.objects.bulk_create([
-            Quote(
-                text=quote["text"],
-                author=quote["author"],
+        for scraped_quote in scraped_quotes:
+            quote = Quote.objects.create(
+                text=scraped_quote["text"],
+                author=scraped_quote["author"],
             )
-            for quote in scraped_quotes
-        ])
+
+            for tag_name in scraped_quote["tags"]:
+                tag, created = Tag.objects.get_or_create(
+                    name=tag_name
+                )
+
+                quote.tags.add(tag)
 
         scrape_state.last_scraped_at = timezone.now()
         scrape_state.save()

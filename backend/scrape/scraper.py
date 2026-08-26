@@ -30,11 +30,17 @@ def scrape_quotes():
         for quote in quote_elements:
             text_element = quote.select_one(".text")
             author_element = quote.select_one(".author")
+            tag_elements = quote.select(".tags .tag")
 
             if text_element and author_element:
+                tags = [
+                    tag.get_text(strip=True)
+                    for tag in tag_elements
+                ]
                 all_quotes.append({
                     "text": text_element.get_text(strip=True),
                     "author": author_element.get_text(strip=True),
+                    "tags": tags,
                 })
 
         next_button = soup.select_one("li.next")

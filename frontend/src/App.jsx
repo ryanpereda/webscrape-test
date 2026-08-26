@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 function App() {
   const [quotes, setQuotes] = useState([]);
   const [count, setCount] = useState(0);
+  const [lastScrapedAt, setLastScrapedAt] = useState(null);
+  const [refreshFailed, setRefreshFailed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -20,6 +22,8 @@ function App() {
       .then((data) => {
         setQuotes(data.quotes);
         setCount(data.count);
+        setLastScrapedAt(data.last_scraped_at);
+        setRefreshFailed(data.refresh_failed);
         setError(null);
       })
       .catch((error) => {
@@ -31,6 +35,15 @@ function App() {
   }, []);
 
 
+  function formatDate(dateString) {
+    if (!dateString) {
+      return "Never";
+    }
+
+    return new Date(dateString).toLocaleString();
+  }
+
+
   return (
     <main>
       <h1>Quote Scraper</h1>
@@ -39,15 +52,34 @@ function App() {
 
       {error && <p>Error: {error}</p>}
 
+      {refreshFailed && (
+        <p>
+          Unable to refresh quotes. Showing previously saved data.
+        </p>
+      )}
+
       {!loading && !error && (
         <>
           <p>Total quotes: {count}</p>
 
-          {quotes.map((quote, index) => (
-            <div key={index}>
+          <p>
+            Last updated: {formatDate(lastScrapedAt)}
+          </p>
+
+          {quotes.map((quote) => (
+            <article key={quote.id}>
               <p>"{quote.text}"</p>
+
               <p>- {quote.author}</p>
-            </div>
+
+              <div>
+                {quote.tags.map((tag) => (
+                  <span key={tag}>
+                    {tag}{" "}
+                  </span>
+                ))}
+              </div>
+            </article>
           ))}
         </>
       )}
