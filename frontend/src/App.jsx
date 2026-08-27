@@ -8,6 +8,8 @@ function App() {
   const [refreshFailed, setRefreshFailed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [search, setSearch] = useState("");
+  const [selectedTag, setSelectedTag] = useState("");
 
 
   useEffect(() => {
@@ -43,6 +45,26 @@ function App() {
     return new Date(dateString).toLocaleString();
   }
 
+  const filteredQuotes = quotes.filter((quote) => {
+    const searchTerm = search.toLowerCase();
+
+    const matchesSearch =
+      quote.text.toLowerCase().includes(searchTerm) ||
+      quote.author.toLowerCase().includes(searchTerm);
+
+    const matchesTag =
+      selectedTag === "" ||
+      quote.tags.includes(selectedTag);
+
+    return matchesSearch && matchesTag;
+  });
+
+  const allTags = [
+    ...new Set(
+      quotes.flatMap((quote) => quote.tags)
+    ),
+  ].sort();
+
 
   return (
     <main>
@@ -66,7 +88,27 @@ function App() {
             Last updated: {formatDate(lastScrapedAt)}
           </p>
 
-          {quotes.map((quote) => (
+          <input
+            type="text"
+            placeholder="Search quotes or authors..."
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+
+          <select
+            value={selectedTag}
+            onChange={(event) => setSelectedTag(event.target.value)}
+          >
+            <option value="">All tags</option>
+
+            {allTags.map((tag) => (
+              <option key={tag} value={tag}>
+                {tag}
+              </option>
+            ))}
+          </select>
+
+          {filteredQuotes.map((quote) => (
             <article key={quote.id}>
               <p>"{quote.text}"</p>
 
