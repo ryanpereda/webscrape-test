@@ -1,7 +1,8 @@
 from django.urls import path
-from . import views
+
+from .views import QuoteListView
 
 
 urlpatterns = [
-    path("quotes/", views.quotes, name="quotes"),
+    path("quotes/", QuoteListView.as_view(), name="quote-list"),
 ]

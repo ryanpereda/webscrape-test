@@ -1,28 +1,23 @@
-from django.http import JsonResponse
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from .services import get_quotes
+from .serializers import QuoteSerializer
 
 
-def quotes(request):
-    data = get_quotes()
+class QuoteListView(APIView):
+    def get(self, request):
+        data = get_quotes()
 
-    quote_data = [
-        {
-            "id": quote.id,
-            "text": quote.text,
-            "author": quote.author,
-            "tags": [
-                tag.name
-                for tag in quote.tags.all()
-            ],
-        }
-        for quote in data["quotes"]
-    ]
+        serializer = QuoteSerializer(
+            data["quotes"],
+            many=True,
+        )
 
-    return JsonResponse({
-        "quotes": quote_data,
-        "count": len(quote_data),
-        "last_scraped_at": data["last_scraped_at"],
-        "refreshed": data["refreshed"],
-        "refresh_failed": data["refresh_failed"],
-    })
+        return Response({
+            "quotes": serializer.data,
+            "count": len(serializer.data),
+            "last_scraped_at": data["last_scraped_at"],
+            "refreshed": data["refreshed"],
+            "refresh_failed": data["refresh_failed"],
+        })
