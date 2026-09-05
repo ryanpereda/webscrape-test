@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.core.cache import cache
 from django.db import transaction
 from django.utils import timezone
 
@@ -8,6 +9,8 @@ from .scraper import scrape_quotes
 
 
 SCRAPE_INTERVAL = timedelta(hours=6)
+SCRAPE_LOCK_KEY = "quotes_scrape_lock"
+SCRAPE_LOCK_TIMEOUT = 60
 
 
 def get_quotes():
@@ -20,20 +23,40 @@ def get_quotes():
 
     refreshed = False
     refresh_failed = False
+    refresh_in_progress = False
 
     if needs_scrape:
-        refreshed = refresh_quotes(scrape_state)
+        lock_acquired = cache.add(
+            SCRAPE_LOCK_KEY,
+            True,
+            timeout=SCRAPE_LOCK_TIMEOUT,
+        )
 
-        if not refreshed:
-            refresh_failed = True
+        if lock_acquired:
+            try:
+                refreshed = refresh_quotes(scrape_state)
 
-    quotes = Quote.objects.prefetch_related("tags").order_by("id")
+                if not refreshed:
+                    refresh_failed = True
+
+            finally:
+                cache.delete(SCRAPE_LOCK_KEY)
+
+        else:
+            refresh_in_progress = True
+
+    quotes = (
+        Quote.objects
+        .prefetch_related("tags")
+        .order_by("id")
+    )
 
     return {
         "quotes": quotes,
         "last_scraped_at": scrape_state.last_scraped_at,
         "refreshed": refreshed,
         "refresh_failed": refresh_failed,
+        "refresh_in_progress": refresh_in_progress,
     }
 
 
@@ -58,6 +81,8 @@ def refresh_quotes(scrape_state):
                 )
 
                 quote.tags.add(tag)
+
+        Tag.objects.filter(quote__isnull=True).delete()
 
         scrape_state.last_scraped_at = timezone.now()
         scrape_state.save()

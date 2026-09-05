@@ -1,8 +1,8 @@
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .services import get_quotes
 from .serializers import QuoteSerializer
+from .services import get_quotes
 
 
 class QuoteListView(APIView):
@@ -20,4 +20,5 @@ class QuoteListView(APIView):
             "last_scraped_at": data["last_scraped_at"],
             "refreshed": data["refreshed"],
             "refresh_failed": data["refresh_failed"],
+            "refresh_in_progress": data["refresh_in_progress"],
         })

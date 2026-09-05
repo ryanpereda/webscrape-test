@@ -6,10 +6,9 @@ function App() {
   const [count, setCount] = useState(0);
   const [lastScrapedAt, setLastScrapedAt] = useState(null);
   const [refreshFailed, setRefreshFailed] = useState(false);
+  const [refreshInProgress, setRefreshInProgress] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [search, setSearch] = useState("");
-  const [selectedTag, setSelectedTag] = useState("");
 
 
   useEffect(() => {
@@ -26,6 +25,7 @@ function App() {
         setCount(data.count);
         setLastScrapedAt(data.last_scraped_at);
         setRefreshFailed(data.refresh_failed);
+        setRefreshInProgress(data.refresh_in_progress);
         setError(null);
       })
       .catch((error) => {
@@ -45,26 +45,6 @@ function App() {
     return new Date(dateString).toLocaleString();
   }
 
-  const filteredQuotes = quotes.filter((quote) => {
-    const searchTerm = search.toLowerCase();
-
-    const matchesSearch =
-      quote.text.toLowerCase().includes(searchTerm) ||
-      quote.author.toLowerCase().includes(searchTerm);
-
-    const matchesTag =
-      selectedTag === "" ||
-      quote.tags.includes(selectedTag);
-
-    return matchesSearch && matchesTag;
-  });
-
-  const allTags = [
-    ...new Set(
-      quotes.flatMap((quote) => quote.tags)
-    ),
-  ].sort();
-
 
   return (
     <main>
@@ -74,9 +54,15 @@ function App() {
 
       {error && <p>Error: {error}</p>}
 
+      {refreshInProgress && (
+        <p>
+          The quote database is being refreshed. Showing saved data.
+        </p>
+      )}
+
       {refreshFailed && (
         <p>
-          Unable to refresh quotes. Showing previously saved data.
+          The latest refresh failed. Showing previously saved data.
         </p>
       )}
 
@@ -88,27 +74,7 @@ function App() {
             Last updated: {formatDate(lastScrapedAt)}
           </p>
 
-          <input
-            type="text"
-            placeholder="Search quotes or authors..."
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-          />
-
-          <select
-            value={selectedTag}
-            onChange={(event) => setSelectedTag(event.target.value)}
-          >
-            <option value="">All tags</option>
-
-            {allTags.map((tag) => (
-              <option key={tag} value={tag}>
-                {tag}
-              </option>
-            ))}
-          </select>
-
-          {filteredQuotes.map((quote) => (
+          {quotes.map((quote) => (
             <article key={quote.id}>
               <p>"{quote.text}"</p>
 
